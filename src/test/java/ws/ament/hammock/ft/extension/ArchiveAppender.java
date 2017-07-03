@@ -13,7 +13,7 @@ public class ArchiveAppender implements ApplicationArchiveProcessor {
     @Override
     public void process(Archive<?> archive, TestClass testClass) {
         archive.as(JavaArchive.class)
-                .addPackages(true, "ws.ament.hammock.ft", "org.eclipse.microprofile.fault.tolerance.tck.retry.clientserver")
+                .addPackages(true, "ws.ament.hammock.ft")
                 .addAsServiceProvider(Extension.class, FaultToleranceExtension.class)
                 .addAsManifestResource(BEANS_XML, "beans.xml");
     }
