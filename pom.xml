@@ -72,7 +72,7 @@
                         <dependency>org.eclipse.microprofile.fault.tolerance:microprofile-fault-tolerance-tck</dependency>
                     </dependenciesToScan>
                     <excludes>
-                        <exclude>org/eclipse/microprofile/fault/tolerance/tck/*</exclude>
+                        <exclude>org/eclipse/microprofile/fault/tolerance/tck/FallbackTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
