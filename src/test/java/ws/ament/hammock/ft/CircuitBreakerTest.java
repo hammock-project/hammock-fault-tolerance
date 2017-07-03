@@ -2,9 +2,11 @@ package ws.ament.hammock.ft;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.testng.Arquillian;
+import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
@@ -13,10 +15,8 @@ import static org.junit.Assert.assertEquals;
 
 public class CircuitBreakerTest extends Arquillian{
     @Deployment
-    public static JavaArchive createDeployment() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addPackages(true,"ws.ament.hammock.ft")
-                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+    public static Archive<?> createDeployment() {
+        return ShrinkWrap.create(WebArchive.class);
     }
 
     @Inject
