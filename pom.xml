@@ -140,10 +140,17 @@
                     <groupId>org.apache.openwebbeans.arquillian</groupId>
                     <artifactId>owb-arquillian-standalone</artifactId>
                     <version>${owb.version}</version>
+                    <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.apache.openwebbeans</groupId>
                     <artifactId>openwebbeans-impl</artifactId>
+                    <version>${owb.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.openwebbeans</groupId>
+                    <artifactId>openwebbeans-web</artifactId>
                     <version>${owb.version}</version>
                     <scope>test</scope>
                 </dependency>
