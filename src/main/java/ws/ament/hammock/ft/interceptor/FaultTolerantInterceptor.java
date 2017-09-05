@@ -1,16 +1,21 @@
 package ws.ament.hammock.ft.interceptor;
 
+import net.jodah.failsafe.AsyncFailsafe;
+import net.jodah.failsafe.CircuitBreakerOpenException;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.SyncFailsafe;
-import net.jodah.failsafe.function.CheckedBiFunction;
 import net.jodah.failsafe.function.CheckedFunction;
+import net.jodah.failsafe.util.Duration;
+import org.eclipse.microprofile.faulttolerance.Asynchronous;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
 import ws.ament.hammock.ft.mapper.CircuitBreakerMapper;
 import ws.ament.hammock.ft.mapper.RetryPolicyMapper;
+import ws.ament.hammock.ft.util.AnnotationUtil;
 
 import javax.annotation.Priority;
 import javax.enterprise.inject.spi.CDI;
@@ -20,6 +25,10 @@ import javax.interceptor.InvocationContext;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Interceptor
 @FaultTolerant
@@ -52,11 +61,11 @@ public class FaultTolerantInterceptor {
         }
 
         boolean isRetryable() {
-            return this.method.isAnnotationPresent(Retry.class);
+            return AnnotationUtil.getAnnotation(this.method, Retry.class) != null;
         }
 
         boolean isCircuitBreaker() {
-            return this.method.isAnnotationPresent(CircuitBreaker.class);
+            return AnnotationUtil.getAnnotation(this.method, CircuitBreaker.class) != null;
         }
 
         Class<? extends FallbackHandler> getFallbackHandlerClass() {
@@ -70,15 +79,24 @@ public class FaultTolerantInterceptor {
         }
 
         RetryPolicy getRetryPolicy() {
-            return retryPolicyMapper.apply(this.method.getAnnotation(Retry.class));
+            Retry retry = AnnotationUtil.getAnnotation(method, Retry.class);
+            return retryPolicyMapper.apply(retry);
         }
 
         net.jodah.failsafe.CircuitBreaker getCircuitBreaker() {
-            return circuitBreakerMapper.apply(this.method.getAnnotation(CircuitBreaker.class));
+            CircuitBreaker circuitBreaker = AnnotationUtil.getAnnotation(method, CircuitBreaker.class);
+            Timeout timeout = AnnotationUtil.getAnnotation(method, Timeout.class);
+            return circuitBreakerMapper.apply(circuitBreaker,timeout);
+        }
+
+        boolean isAsync() {
+            return AnnotationUtil.getAnnotation(method, Asynchronous.class) != null
+                    || AnnotationUtil.getAnnotation(method, Timeout.class) != null;
         }
 
         Object invoke(InvocationContext invocationContext) {
             SyncFailsafe<?> failsafe = null;
+            AsyncFailsafe<?> asyncFailsafe = null;
             if(this.isRetryable()) {
                 failsafe = Failsafe.with(this.retryPolicy);
             }
@@ -96,7 +114,29 @@ public class FaultTolerantInterceptor {
             if(fallbackHandlerClass != null) {
                 failsafe.withFallback(new FallbackCheckedFunction<>(fallbackHandlerClass, invocationContext));
             }
-            return failsafe.get(invocationContext::proceed);
+            if(isAsync()) {
+                asyncFailsafe = failsafe.with(new ScheduledThreadPoolExecutor(2));
+            }
+            try {
+                if (asyncFailsafe != null) {
+                    Duration timeout = circuitBreaker.getTimeout();
+                    if (timeout != null) {
+                        return asyncFailsafe.get(invocationContext::proceed).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                    }
+                    else {
+                        return asyncFailsafe.get(invocationContext::proceed).get();
+                    }
+                }
+                else {
+                    return failsafe.get(invocationContext::proceed);
+                }
+            }
+            catch (CircuitBreakerOpenException e) {
+                throw new org.eclipse.microprofile.faulttolerance.exceptions.CircuitBreakerOpenException(e);
+            }
+            catch (TimeoutException | InterruptedException | ExecutionException e) {
+                throw new org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException(e);
+            }
         }
     }
 

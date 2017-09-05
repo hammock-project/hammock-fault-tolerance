@@ -10,9 +10,9 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <weld.version>3.0.0.Final</weld.version>
-        <owb.version>1.7.3</owb.version>
-        <arquillian-weld-embedded.version>2.0.0.Beta4</arquillian-weld-embedded.version>
+        <weld.version>3.0.1.Final</weld.version>
+        <owb.version>1.7.4</owb.version>
+        <arquillian-weld-embedded.version>2.0.0.Beta5</arquillian-weld-embedded.version>
         <arquillian.version>1.1.13.Final</arquillian.version>
         <cdi2.version>2.0</cdi2.version>
     </properties>
@@ -66,14 +66,18 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>2.20</version>
                 <configuration>
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.fault.tolerance:microprofile-fault-tolerance-tck</dependency>
                     </dependenciesToScan>
-                    <excludes>
-                        <exclude>org/eclipse/microprofile/fault/tolerance/tck/FallbackTest</exclude>
-                    </excludes>
+                    <includes>
+                        <include>org.eclipse.microprofile.fault.tolerance.tck.RetryTest</include>
+                        <include>org.eclipse.microprofile.fault.tolerance.tck.RetryConditionTest</include>
+                        <include>org.eclipse.microprofile.fault.tolerance.tck.RetryTimeoutTest</include>
+                        <include>org.eclipse.microprofile.fault.tolerance.tck.CircuitBreakerTest</include>
+                        <include>org.eclipse.microprofile.fault.tolerance.tck.CircuitBreakerRetryTest</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>
@@ -113,6 +117,12 @@
         <profile>
             <id>OWB</id>
             <dependencies>
+                <dependency>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                    <version>3.1.0</version>
+                    <scope>test</scope>
+                </dependency>
                 <dependency>
                     <groupId>javax.enterprise</groupId>
                     <artifactId>cdi-api</artifactId>
